@@ -10,6 +10,8 @@ const ARROW_RIGHT = 39;
 const ARROW_DOWN = 40;
 var mouseX;
 var mouseY;
+var mouseClickX;
+var mouseClickY;
 var mouseLeftHeld = false;
 var confirmKeyHeld = false;
 var jumpKeyHeld = false;
@@ -41,7 +43,7 @@ var heroColor = 'lightGray';
 var debugPanel = {
 
 	buffer: "",
-	fields: [
+	button: [
 		{ name: "PositionX:  ", value: heroX },
 		{ name: "PositionY:  ", value: heroY },
 		{ name: "SpeedX:     ", value: heroVelocityX },
@@ -55,27 +57,27 @@ var debugPanel = {
 		{ name: "Air Drag:   ", value: _AIR_RESISTANCE }
 	],
 
+	lastButton: 0,
 	x: 10,
 	y: 20,
-	offsetY: 20
-};
+	offsetY: 15,
+	width: 175,
 
-var y = debugPanel.y;
-for (var i = 0; i < debugPanel.fields.length; i++)
-{
-	var field = debugPanel.fields[i];
-	field.x = debugPanel.x;
-	field.y = y;
-	y += debugPanel.offsetY;
-}
+	font: '15px Consolas',
+	color: 'lime',
+	highlightColor: 'yellow'
+};
 
 window.onload = function()
 {
 	canvas = document.getElementById('gameCanvas');
 	context = canvas.getContext('2d');
+
 	document.addEventListener('keydown', keyPressed);
 	document.addEventListener('keyup', keyReleased);
 	document.addEventListener('mousemove', mousePosHandler);
+	document.addEventListener('mousedown', mousePressed);
+	document.addEventListener('mouseup', mouseReleased);
 
 	heroX = canvas.width/2;
 	heroY = canvas.height - heroHeight;
@@ -137,13 +139,46 @@ function update()
 		heroVelocityY = 0;
 		heroIsJumping = false;
 	}
+
+	// update debugPanel
+	var x = debugPanel.x;
+	var y = debugPanel.y;
+	for (var i = 0; i < debugPanel.button.length; i++)
+	{
+		var button = debugPanel.button[i];
+		var buttonY = y - debugPanel.offsetY;
+		var color = debugPanel.color;
+
+		if (mouseX > debugPanel.x &&
+			mouseX < debugPanel.x + debugPanel.width &&
+			mouseY > buttonY &&
+			mouseY < buttonY + debugPanel.offsetY)
+		{
+			if (mouseLeftHeld)
+			{
+				if (debugPanel.lastButton.isSelected != 0)
+				{
+					debugPanel.lastButton.isSelected = false;
+				}
+				button.isSelected = true;
+				debugPanel.lastButton = button;
+			}
+			button.isHighlighted = true;
+		}
+		else
+		{
+			button.isHighlighted = false;
+		}
+		y += debugPanel.offsetY;
+	}
 }
 
 function draw()
 {
 	colorRect(0, 0, canvas.width, canvas.height, backgroundColor);
-	drawDebugInfo(debugPanel, 100, '15px Consolas', 'lime', 'yellow');
+	drawPanelWithButtons(debugPanel, 100);
 	colorRect(heroX, heroY, heroWidth, heroHeight, heroColor);
+	// drawText(mouseX + ":" + mouseY, mouseX+20, mouseY+20, '10px Consolas', 'yellow');
 }
 
 function keyPressed(evt)
@@ -191,6 +226,20 @@ function mousePosHandler(evt)
 	mouseY = mousePos.y;
 }
 
+function mousePressed(evt)
+{
+	var result = calculateMousePos(evt);
+	mouseClickX = result.x;
+	mouseClickY = result.y;
+	console.log(mouseClickX + " " + mouseClickY);
+	mouseLeftHeld = true;
+}
+
+function mouseReleased(evt)
+{
+	mouseLeftHeld = false;
+}
+
 function calculateMousePos(evt)
 {
   var rect = canvas.getBoundingClientRect(), root = document.documentElement;
@@ -204,47 +253,29 @@ function calculateMousePos(evt)
   };
 }
 
-function drawDebugInfo(debugPanel, precision, font, color1, color2)
+function drawPanelWithButtons(panel, precision)
 {
-	var highlightColor;
+	var x = panel.x;
+	var y = panel.y;
 
-	for (var i = 0; i < debugPanel.fields.length; i++)
+	for (var i = 0; i < panel.button.length; i++)
 	{
-		var field = debugPanel.fields[i];
-		if (false)
-		{
-			field.isHighlighted = true;
-		}
-		else
-		{
-			field.isHighlighted = false;
-		}
-		if (confirmKeyHeld && field.isHighlighted)
-		{
-			field.isHighlighted = false;
-			// TOOD: push buffer value to appropriate variable
-			debugPanel.buffer = "";
-		}
+		var button = panel.button[i];
+		var buttonY = y - panel.offsetY;
+		var color = panel.color;
 
-		if (field.isHighlighted == undefined || !field.isHighlighted)
+		if (button.isHighlighted || button.isSelected)
 		{
-			highlightColor = color1;
-			drawDebugInfoLine(field);
+			color = panel.highlightColor;
 		}
-		else
-		{
-			highlightColor = color2;
-			drawDebugInfoLine(field);
-		}
+		drawButton(button.name, button.value);
 	}
 
-	function drawDebugInfoLine(field)
+	function drawButton(text, value)
 	{
-		x = field.x;
-		y = field.y;
-		text = field.name;
-		value = field.value;
-		drawText(text + Math.round(value*precision)/precision, x, y, font, highlightColor);
-		y += debugPanel.offsetY;
+		var font = panel.font;
+
+		drawText(text + Math.round(value*precision)/precision, x, y, font, color);
+		y += panel.offsetY;
 	}
 }
