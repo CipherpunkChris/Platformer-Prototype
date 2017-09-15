@@ -44,8 +44,6 @@ var debugPanel = {
 
 	buffer: "",
 	button: [
-		{ name: "PositionX:  ", value: heroX },
-		{ name: "PositionY:  ", value: heroY },
 		{ name: "SpeedX:     ", value: heroVelocityX },
 		{ name: "SpeedY:     ", value: heroVelocityY },
 		{ name: "Max SpeedX: ", value: heroMaxVelocityX },
@@ -61,7 +59,7 @@ var debugPanel = {
 	x: 10,
 	y: 20,
 	offsetY: 15,
-	width: 175,
+	width: 150,
 
 	font: '15px Consolas',
 	color: 'lime',
