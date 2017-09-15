@@ -8,6 +8,9 @@ const ARROW_LEFT = 37;
 const ARROW_UP = 38;
 const ARROW_RIGHT = 39;
 const ARROW_DOWN = 40;
+var mouseX;
+var mouseY;
+var mouseLeftHeld = false;
 var confirmKeyHeld = false;
 var jumpKeyHeld = false;
 var leftKeyHeld = false;
@@ -35,8 +38,10 @@ var heroIsJumping = false;
 var heroCanJump = true;
 var heroColor = 'lightGray';
 
-var debugBuffer = "";
-var debugFields = [
+var debugPanel = {
+
+	buffer: "",
+	fields: [
 		{ name: "PositionX:  ", value: heroX },
 		{ name: "PositionY:  ", value: heroY },
 		{ name: "SpeedX:     ", value: heroVelocityX },
@@ -48,7 +53,21 @@ var debugFields = [
 		{ name: "Gravity:    ", value: _GRAVITY },
 		{ name: "Friction:   ", value: _FRICTION },
 		{ name: "Air Drag:   ", value: _AIR_RESISTANCE }
-];
+	],
+
+	x: 10,
+	y: 20,
+	offsetY: 20
+};
+
+var y = debugPanel.y;
+for (var i = 0; i < debugPanel.fields.length; i++)
+{
+	var field = debugPanel.fields[i];
+	field.x = debugPanel.x;
+	field.y = y;
+	y += debugPanel.offsetY;
+}
 
 window.onload = function()
 {
@@ -56,7 +75,7 @@ window.onload = function()
 	context = canvas.getContext('2d');
 	document.addEventListener('keydown', keyPressed);
 	document.addEventListener('keyup', keyReleased);
-	document.addEventListener('mousepos', keyReleased);
+	document.addEventListener('mousemove', mousePosHandler);
 
 	heroX = canvas.width/2;
 	heroY = canvas.height - heroHeight;
@@ -123,9 +142,7 @@ function update()
 function draw()
 {
 	colorRect(0, 0, canvas.width, canvas.height, backgroundColor);
-
-	drawDebugInfo(10, 20, 20, 100, debugFields, '15px Consolas', 'lime', 'yellow');
-
+	drawDebugInfo(debugPanel, 100, '15px Consolas', 'lime', 'yellow');
 	colorRect(heroX, heroY, heroWidth, heroHeight, heroColor);
 }
 
@@ -167,48 +184,67 @@ function keyEventHandler(key, state)
 	}
 }
 
-function drawDebugInfo(x, y, offsetY, precision, debugFields, font, color1, color2)
+function mousePosHandler(evt)
+{
+	var mousePos = calculateMousePos(evt);
+	mouseX = mousePos.x;
+	mouseY = mousePos.y;
+}
+
+function calculateMousePos(evt)
+{
+  var rect = canvas.getBoundingClientRect(), root = document.documentElement;
+
+  // account for the margins, canvas position on page, scroll amount, etc.
+  var mouseX = evt.clientX - rect.left - root.scrollLeft;
+  var mouseY = evt.clientY - rect.top - root.scrollTop;
+  return {
+	x: mouseX,
+	y: mouseY
+  };
+}
+
+function drawDebugInfo(debugPanel, precision, font, color1, color2)
 {
 	var highlightColor;
 
-	for (var i = 0; i < debugFields.length; i++)
+	for (var i = 0; i < debugPanel.fields.length; i++)
 	{
+		var field = debugPanel.fields[i];
 		if (false)
 		{
-			debugFields[i].isHighlighted = true;
+			field.isHighlighted = true;
 		}
 		else
 		{
-			debugFields[i].isHighlighted = false;
+			field.isHighlighted = false;
 		}
-		if (confirmKeyHeld && debugFields[i].isHighlighted)
+		if (confirmKeyHeld && field.isHighlighted)
 		{
-			debugFields[i].isHighlighted = false;
+			field.isHighlighted = false;
 			// TOOD: push buffer value to appropriate variable
-			debugBuffer = "";
+			debugPanel.buffer = "";
 		}
 
-		if (debugFields[i].isHighlighted == undefined || !debugFields[i].isHighlighted)
+		if (field.isHighlighted == undefined || !field.isHighlighted)
 		{
 			highlightColor = color1;
-			drawDebugInfoLine(debugFields[i].name, debugFields[i].value);
+			drawDebugInfoLine(field);
 		}
 		else
 		{
 			highlightColor = color2;
-			drawDebugInfoLine(debugFields[i].name, debugBuffer);
+			drawDebugInfoLine(field);
 		}
 	}
 
-	function drawDebugInfoLine(text, value)
+	function drawDebugInfoLine(field)
 	{
+		x = field.x;
+		y = field.y;
+		text = field.name;
+		value = field.value;
 		drawText(text + Math.round(value*precision)/precision, x, y, font, highlightColor);
-		// drawText(text + value, x, y, font, highlightColor);
-		y += offsetY;
+		y += debugPanel.offsetY;
 	}
-}
-
-for (var i = 0; i < debugFields.length; i++)
-{
-
 }
