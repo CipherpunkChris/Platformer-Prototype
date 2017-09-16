@@ -1,7 +1,7 @@
 var canvas, canvasContext;
 const FRAMES_PER_SECOND = 60;
 const TIME_PER_TICK = 1/FRAMES_PER_SECOND;
-const STRING = "string";
+const NUMBER = "number";
 
 const ENTER = 13;
 const SPACEBAR = 32;
@@ -24,8 +24,13 @@ var downKeyHeld = false;
 var backgroundColor = 'dimGrey';
 
 var _GRAVITY = 0.20;
-var _FRICTION = 0.92;
 var _AIR_RESISTANCE = 0.90;
+var _FRICTION = 0.92;
+
+var _FRICTION_PTR = function(val) {
+	if (arguments.length > 0) _FRICTION = val;
+	return _FRICTION;
+}
 
 var heroX;
 var heroY;
@@ -45,13 +50,13 @@ var debugPanel = {
 
 	buffer: "",
 	button: [
-		{ name: "Move Max: ", value: heroMaxVelocityX },
-		{ name: "Jump Max: ", value: heroMaxVelocityY },
-		{ name: "Move Vel: ", value: heroMoveSpeed },
-		{ name: "Jump Vel: ", value: heroJumpSpeed },
-		{ name: "Gravity:  ", value: _GRAVITY },
-		{ name: "Friction: ", value: _FRICTION },
-		{ name: "Air Drag: ", value: _AIR_RESISTANCE }
+		// { name: "Move Max: ", value: heroMaxVelocityX },
+		// { name: "Jump Max: ", value: heroMaxVelocityY },
+		// { name: "Move Vel: ", value: heroMoveSpeed },
+		// { name: "Jump Vel: ", value: heroJumpSpeed },
+		// { name: "Gravity:  ", value: _GRAVITY },
+		// { name: "Air Drag: ", value: _AIR_RESISTANCE }
+		{ name: "Friction: ", value: _FRICTION_PTR },
 	],
 
 	selected: undefined,
@@ -143,6 +148,8 @@ function update()
 	// update debugPanel
 	var x = debugPanel.x;
 	var y = debugPanel.y;
+
+	debugPanel.highlighted = undefined;
 	for (var i = 0; i < debugPanel.button.length; i++)
 	{
 		var button = debugPanel.button[i];
@@ -203,7 +210,7 @@ function keyPressed(evt)
 		if (key == 13) {
 			var number = Number(debugPanel.buffer);
 			if (!isNaN(number)) {
-				debugPanel.selected.value = number;
+				debugPanel.selected.value(number);
 				debugPanel.selected = undefined;
 			}
 			else
@@ -312,12 +319,12 @@ function drawPanelWithButtons(panel, precision)
 	function drawButton(text, value)
 	{
 		var font = panel.font;
-
-		if (!typeof value == STRING)
+		var result = value();
+		if (typeof value() == NUMBER)
 		{
-			value = Math.round(value*precision)/precision;
+			result = Math.round(value()*precision)/precision;
 		}
-		drawText(text + value, x, y, font, color);
+		drawText(text + result, x, y, font, color);
 		y += panel.offsetY;
 	}
 }
