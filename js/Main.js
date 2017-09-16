@@ -55,6 +55,7 @@ var debugPanel = {
 		{ name: "Air Drag:   ", value: _AIR_RESISTANCE }
 	],
 
+	currentButton: 0,
 	lastButton: 0,
 	x: 10,
 	y: 20,
@@ -154,12 +155,8 @@ function update()
 		{
 			if (mouseLeftHeld)
 			{
-				if (debugPanel.lastButton.isSelected != 0)
-				{
-					debugPanel.lastButton.isSelected = false;
-				}
-				button.isSelected = true;
-				debugPanel.lastButton = button;
+				debugPanel.lastButton = debugPanel.selectedButton;
+				debugPanel.selectedButton = button;
 			}
 			button.isHighlighted = true;
 		}
@@ -182,6 +179,30 @@ function draw()
 function keyPressed(evt)
 {
 	keyEventHandler(evt.keyCode, true);
+	var key = evt.keyCode;
+	if (key >= 96 && key <= 106 && debugPanel.selectedButton != undefined)
+	{
+		var num = key-96;
+		debugPanel.buffer += num.toString();
+	}
+	if (key >= 48 && key <= 58 && debugPanel.selectedButton != undefined)
+	{
+		var num = key-48;
+		debugPanel.buffer += num.toString();
+	}
+	if (key == 110 || key == 190 && debugPanel.selectedButton != undefined)
+	{
+		debugPanel.buffer += ".";
+	}
+	if (key == 8 && debugPanel.selectedButton != undefined)
+	{
+		debugPanel.buffer = debugPanel.buffer.slice(0, -1);
+	}
+	if (key == 13 && debugPanel.selectedButton != undefined) {
+		debugPanel.selectedButton.value = debugPanel.buffer;
+		debugPanel.buffer = "";
+		debugPanel.selectedButton = undefined;
+	}
 }
 
 function keyReleased(evt)
@@ -262,18 +283,29 @@ function drawPanelWithButtons(panel, precision)
 		var buttonY = y - panel.offsetY;
 		var color = panel.color;
 
-		if (button.isHighlighted || button.isSelected)
+		if (button.isHighlighted || button == panel.selectedButton)
 		{
 			color = panel.highlightColor;
 		}
-		drawButton(button.name, button.value);
+		if (button == panel.selectedButton)
+		{
+			drawButton(button.name, panel.buffer);
+		}
+		else
+		{
+			drawButton(button.name, button.value);
+		}
 	}
 
 	function drawButton(text, value)
 	{
 		var font = panel.font;
 
-		drawText(text + Math.round(value*precision)/precision, x, y, font, color);
+		if (!isNaN(value))
+		{
+			value = Math.round(value*precision)/precision;
+		}
+		drawText(text + value, x, y, font, color);
 		y += panel.offsetY;
 	}
 }
