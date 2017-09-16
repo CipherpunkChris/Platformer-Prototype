@@ -1,6 +1,7 @@
 var canvas, canvasContext;
 const FRAMES_PER_SECOND = 60;
 const TIME_PER_TICK = 1/FRAMES_PER_SECOND;
+const STRING = "string";
 
 const ENTER = 13;
 const SPACEBAR = 32;
@@ -44,19 +45,18 @@ var debugPanel = {
 
 	buffer: "",
 	button: [
-		{ name: "SpeedX:     ", value: heroVelocityX },
-		{ name: "SpeedY:     ", value: heroVelocityY },
-		{ name: "Max SpeedX: ", value: heroMaxVelocityX },
-		{ name: "Max SpeedY: ", value: heroMaxVelocityY },
-		{ name: "Move Speed: ", value: heroMoveSpeed },
-		{ name: "Jump Speed: ", value: heroJumpSpeed },
-		{ name: "Gravity:    ", value: _GRAVITY },
-		{ name: "Friction:   ", value: _FRICTION },
-		{ name: "Air Drag:   ", value: _AIR_RESISTANCE }
+		{ name: "Move Max: ", value: heroMaxVelocityX },
+		{ name: "Jump Max: ", value: heroMaxVelocityY },
+		{ name: "Move Vel: ", value: heroMoveSpeed },
+		{ name: "Jump Vel: ", value: heroJumpSpeed },
+		{ name: "Gravity:  ", value: _GRAVITY },
+		{ name: "Friction: ", value: _FRICTION },
+		{ name: "Air Drag: ", value: _AIR_RESISTANCE }
 	],
 
-	currentButton: 0,
-	lastButton: 0,
+	selected: undefined,
+	highlighted: undefined,
+
 	x: 10,
 	y: 20,
 	offsetY: 15,
@@ -90,6 +90,7 @@ window.onload = function()
 
 function update()
 {
+
 	if (!heroIsJumping && !jumpKeyHeld)
 	{
 		heroCanJump = true;
@@ -155,14 +156,9 @@ function update()
 		{
 			if (mouseLeftHeld)
 			{
-				debugPanel.lastButton = debugPanel.selectedButton;
-				debugPanel.selectedButton = button;
+				debugPanel.selected = button;
 			}
-			button.isHighlighted = true;
-		}
-		else
-		{
-			button.isHighlighted = false;
+			debugPanel.highlighted = button;
 		}
 		y += debugPanel.offsetY;
 	}
@@ -179,29 +175,43 @@ function draw()
 function keyPressed(evt)
 {
 	keyEventHandler(evt.keyCode, true);
-	var key = evt.keyCode;
-	if (key >= 96 && key <= 106 && debugPanel.selectedButton != undefined)
-	{
-		var num = key-96;
-		debugPanel.buffer += num.toString();
-	}
-	if (key >= 48 && key <= 58 && debugPanel.selectedButton != undefined)
-	{
-		var num = key-48;
-		debugPanel.buffer += num.toString();
-	}
-	if (key == 110 || key == 190 && debugPanel.selectedButton != undefined)
-	{
-		debugPanel.buffer += ".";
-	}
-	if (key == 8 && debugPanel.selectedButton != undefined)
-	{
-		debugPanel.buffer = debugPanel.buffer.slice(0, -1);
-	}
-	if (key == 13 && debugPanel.selectedButton != undefined) {
-		debugPanel.selectedButton.value = debugPanel.buffer;
-		debugPanel.buffer = "";
-		debugPanel.selectedButton = undefined;
+	if (debugPanel.selected != undefined) {
+
+		var key = evt.keyCode;
+		if (key >= 96 && key <= 106)
+		{
+			var num = key-96;
+			debugPanel.buffer += num.toString();
+		}
+		if (key >= 48 && key <= 58)
+		{
+			var num = key-48;
+			debugPanel.buffer += num.toString();
+		}
+		if (key == 109 || key == 189)
+		{
+			debugPanel.buffer += "-";
+		}
+		if (key == 110 || key == 190)
+		{
+			debugPanel.buffer += ".";
+		}
+		if (key == 8)
+		{
+			debugPanel.buffer = debugPanel.buffer.slice(0, -1);
+		}
+		if (key == 13) {
+			var number = Number(debugPanel.buffer);
+			if (!isNaN(number)) {
+				debugPanel.selected.value = number;
+				debugPanel.selected = undefined;
+			}
+			else
+			{
+				debugPanel.selected = undefined;
+			}
+			debugPanel.buffer = ""
+		}
 	}
 }
 
@@ -283,12 +293,14 @@ function drawPanelWithButtons(panel, precision)
 		var buttonY = y - panel.offsetY;
 		var color = panel.color;
 
-		if (button.isHighlighted || button == panel.selectedButton)
+		if (button == panel.highlighted)
 		{
 			color = panel.highlightColor;
 		}
-		if (button == panel.selectedButton)
+
+		if (button == panel.selected)
 		{
+			color = panel.highlightColor;
 			drawButton(button.name, panel.buffer);
 		}
 		else
@@ -301,7 +313,7 @@ function drawPanelWithButtons(panel, precision)
 	{
 		var font = panel.font;
 
-		if (!isNaN(value))
+		if (!typeof value == STRING)
 		{
 			value = Math.round(value*precision)/precision;
 		}
