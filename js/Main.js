@@ -2,17 +2,32 @@ var canvas, canvasContext;
 const FRAMES_PER_SECOND = 60;
 const TIME_PER_TICK = 1/FRAMES_PER_SECOND;
 
-const ENTER = 13;
-const SPACEBAR = 32;
-const ARROW_LEFT = 37;
-const ARROW_UP = 38;
-const ARROW_RIGHT = 39;
-const ARROW_DOWN = 40;
+const KEY_ARROW_LEFT = 37;
+const KEY_ARROW_UP = 38;
+const KEY_ARROW_RIGHT = 39;
+const KEY_ARROW_DOWN = 40;
+
+const KEY_NUMPAD_0 = 96;
+const KEY_NUMPAD_9 = 105;
+const KEY_NUMPAD_PLUS = 107;
+const KEY_NUMPAD_MINUS = 109;
+const KEY_NUMPAD_PERIOD = 110;
+
+const KEY_BACKSPACE = 8
+const KEY_ENTER = 13;
+const KEY_ESCAPE = 27;
+const KEY_SPACEBAR = 32;
+
+const KEY_0 = 48;
+const KEY_9 = 57;
+const KEY_PLUS = 187;
+const KEY_MINUS = 189;
+const KEY_PERIOD = 190;
+const KEY_TILDE = 192; // cheat console
+
 var mouseX;
 var mouseY;
-var mouseClickX;
-var mouseClickY;
-var mouseLeftHeld = false;
+var mouseButtonHeld = false;
 var confirmKeyHeld = false;
 var jumpKeyHeld = false;
 var leftKeyHeld = false;
@@ -121,7 +136,6 @@ function draw()
 	colorRect(0, 0, canvas.width, canvas.height, backgroundColor);
 	drawPanelWithButtons(debugPanel, PRECISION);
 	colorRect(heroX, heroY, heroWidth, heroHeight, heroColor);
-	// drawText(mouseX + ":" + mouseY, mouseX+20, mouseY+20, '10px Consolas', 'yellow');
 }
 
 function keyPressed(evt)
@@ -137,25 +151,24 @@ function keyReleased(evt)
 
 function keyEventHandler(key, state)
 {
-	console.log(key + ": " + state);
 	switch (key)
 	{
-		case SPACEBAR:
+		case KEY_SPACEBAR:
 			jumpKeyHeld = state;
 			break;
-		case ENTER:
+		case KEY_ENTER:
 			confirmKeyHeld = state;
 			break;
-		case ARROW_LEFT:
+		case KEY_ARROW_LEFT:
 			leftKeyHeld = state;
 			break;
-		case ARROW_UP:
+		case KEY_ARROW_UP:
 			upKeyHeld = state;
 			break;
-		case ARROW_RIGHT:
+		case KEY_ARROW_RIGHT:
 			rightKeyHeld = state;
 			break;
-		case ARROW_DOWN:
+		case KEY_ARROW_DOWN:
 			downKeyHeld = state;
 			break;
 		default:
@@ -172,16 +185,12 @@ function mousePosHandler(evt)
 
 function mousePressed(evt)
 {
-	var result = calculateMousePos(evt);
-	mouseClickX = result.x;
-	mouseClickY = result.y;
-	console.log(mouseClickX + " " + mouseClickY);
-	mouseLeftHeld = true;
+	mouseButtonHeld = true;
 }
 
 function mouseReleased(evt)
 {
-	mouseLeftHeld = false;
+	mouseButtonHeld = false;
 }
 
 function calculateMousePos(evt)

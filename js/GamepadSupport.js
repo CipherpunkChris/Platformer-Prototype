@@ -23,12 +23,12 @@ function GamepadSupport()
     var prev_gamepad_fire = false;
     var prev_gamepad_jump = false;
 
-    var SIMULATED_KEY_UP = ARROW_UP;
-    var SIMULATED_KEY_DOWN = ARROW_DOWN;
-    var SIMULATED_KEY_LEFT = ARROW_LEFT;
-    var SIMULATED_KEY_RIGHT = ARROW_RIGHT;
-    var SIMULATED_KEY_B_BUTTON = 13; // [B] button = enter
-    var SIMULATED_KEY_A_BUTTON = 32; // [A] button = space
+    var SIMULATED_KEY_UP = KEY_ARROW_UP;
+    var SIMULATED_KEY_DOWN = KEY_ARROW_DOWN;
+    var SIMULATED_KEY_LEFT = KEY_ARROW_LEFT;
+    var SIMULATED_KEY_RIGHT = KEY_ARROW_RIGHT;
+    var SIMULATED_KEY_B_BUTTON = KEY_ENTER; // [B] button = enter
+    var SIMULATED_KEY_A_BUTTON = KEY_SPACEBAR; // [A] button = spacebar
 
     window.addEventListener("gamepadconnected", function(e) {
     // Gamepad connected

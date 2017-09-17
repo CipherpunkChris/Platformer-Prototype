@@ -1,3 +1,4 @@
+var _DEBUG_CHEAT_CONSOLE = false;
 const NUMBER = "number";
 const PRECISION = 100;
 
@@ -11,7 +12,7 @@ var debugPanel = {
 		{ name: "Jump Vel: ", value: eval(makePtr("heroJumpSpeed")) },
 		{ name: "Gravity:  ", value: eval(makePtr("_GRAVITY")) },
 		{ name: "Friction: ", value: eval(makePtr("_FRICTION")) },
-		{ name: "Air Drag: ", value: eval(makePtr("_AIR_RESISTANCE")) }
+		{ name: "Air Drag: ", value: eval(makePtr("_AIR_RESISTANCE")) },
 	],
 
 	selected: undefined,
@@ -29,6 +30,11 @@ var debugPanel = {
 
 function drawPanelWithButtons(panel, precision)
 {
+	if (!_DEBUG_CHEAT_CONSOLE)
+	{
+		return;
+	}
+
 	var x = panel.x;
 	var y = panel.y;
 
@@ -69,14 +75,18 @@ function drawPanelWithButtons(panel, precision)
 
 function panelUpdate(panel)
 {
-    var x = panel.x;
-    var y = panel.y;
+	if (!_DEBUG_CHEAT_CONSOLE)
+	{
+		return;
+	}
+
+	var currentY = panel.y;
 
     panel.highlighted = undefined;
 	for (var i = 0; i < panel.button.length; i++)
 	{
 		var button = panel.button[i];
-		var buttonY = y - panel.offsetY;
+		var buttonY = currentY - panel.offsetY;
 		var color = panel.color;
 
 		if (mouseX > panel.x &&
@@ -84,63 +94,73 @@ function panelUpdate(panel)
 			mouseY > buttonY &&
 			mouseY < buttonY + panel.offsetY)
 		{
-			if (mouseLeftHeld)
+			if (mouseButtonHeld)
 			{
 				panel.selected = button;
+				panel.buffer = "";
 			}
 			panel.highlighted = button;
 		}
-		y += panel.offsetY;
+		currentY += panel.offsetY;
 	}
 }
 
 function panelKeyCapture(panel, evt)
 {
-    if (debugPanel.selected != undefined) {
+	var key = evt.keyCode;
+	if (key == KEY_TILDE) {
+		_DEBUG_CHEAT_CONSOLE = !_DEBUG_CHEAT_CONSOLE;
+	}
+	if (!_DEBUG_CHEAT_CONSOLE)
+	{
+		return;
+	}
 
-        var key = evt.keyCode;
-        if (key >= 96 && key <= 106)
+    if (panel.selected != undefined) {
+
+		if (key == KEY_ESCAPE) {
+			panel.selected = undefined;
+			panel.buffer = "";
+		}
+        if (key >= KEY_NUMPAD_0 && key <= KEY_NUMPAD_9)
         {
             var num = key-96;
-            debugPanel.buffer += num.toString();
+            panel.buffer += num.toString();
         }
-        if (key >= 48 && key <= 58)
+        if (key >= KEY_0 && key <= KEY_9)
         {
             var num = key-48;
-            debugPanel.buffer += num.toString();
+            panel.buffer += num.toString();
         }
-        if (key == 109 || key == 189)
+        if (key == KEY_MINUS || key == KEY_NUMPAD_MINUS)
         {
-            debugPanel.buffer += "-";
+            panel.buffer += "-";
         }
-        if (key == 110 || key == 190)
+        if (key == KEY_PERIOD || key == KEY_NUMPAD_PERIOD)
         {
-            debugPanel.buffer += ".";
+            panel.buffer += ".";
         }
-        if (key == 8)
+        if (key == KEY_BACKSPACE)
         {
-            debugPanel.buffer = debugPanel.buffer.slice(0, -1);
+            panel.buffer = panel.buffer.slice(0, -1);
         }
-        if (key == 13) {
-            var number = Number(debugPanel.buffer);
-            if (!isNaN(number)) {
-                debugPanel.selected.value(number);
-                debugPanel.selected = undefined;
+        if (key == KEY_ENTER) {
+            var number = Number(panel.buffer);
+            if (!isNaN(number) && panel.buffer != "") {
+                panel.selected.value(number);
             }
-            else
-            {
-                debugPanel.selected = undefined;
-            }
-            debugPanel.buffer = ""
+
+			panel.selected = undefined;
+            panel.buffer = "";
         }
     }
 }
 
 function drawText(text, x, y, font, color)
 {
-    context.font = font;
-    context.fillStyle = color;
-    context.fillText(text, x, y);
+    canvasContext.font = font;
+    canvasContext.fillStyle = color;
+    canvasContext.fillText(text, x, y);
 }
 
 function makePtr(varName) {
