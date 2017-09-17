@@ -1,7 +1,6 @@
 var canvas, canvasContext;
 const FRAMES_PER_SECOND = 60;
 const TIME_PER_TICK = 1/FRAMES_PER_SECOND;
-const NUMBER = "number";
 
 const ENTER = 13;
 const SPACEBAR = 32;
@@ -27,11 +26,6 @@ var _GRAVITY = 0.20;
 var _AIR_RESISTANCE = 0.90;
 var _FRICTION = 0.92;
 
-var _FRICTION_PTR = function(val) {
-	if (arguments.length > 0) _FRICTION = val;
-	return _FRICTION;
-}
-
 var heroX;
 var heroY;
 var heroWidth = 64;
@@ -45,32 +39,6 @@ var heroJumpSpeed = 10;
 var heroIsJumping = false;
 var heroCanJump = true;
 var heroColor = 'lightGray';
-
-var debugPanel = {
-
-	buffer: "",
-	button: [
-		// { name: "Move Max: ", value: heroMaxVelocityX },
-		// { name: "Jump Max: ", value: heroMaxVelocityY },
-		// { name: "Move Vel: ", value: heroMoveSpeed },
-		// { name: "Jump Vel: ", value: heroJumpSpeed },
-		// { name: "Gravity:  ", value: _GRAVITY },
-		// { name: "Air Drag: ", value: _AIR_RESISTANCE }
-		{ name: "Friction: ", value: _FRICTION_PTR },
-	],
-
-	selected: undefined,
-	highlighted: undefined,
-
-	x: 10,
-	y: 20,
-	offsetY: 15,
-	width: 150,
-
-	font: '15px Consolas',
-	color: 'lime',
-	highlightColor: 'yellow'
-};
 
 window.onload = function()
 {
@@ -145,36 +113,13 @@ function update()
 		heroIsJumping = false;
 	}
 
-	// update debugPanel
-	var x = debugPanel.x;
-	var y = debugPanel.y;
-
-	debugPanel.highlighted = undefined;
-	for (var i = 0; i < debugPanel.button.length; i++)
-	{
-		var button = debugPanel.button[i];
-		var buttonY = y - debugPanel.offsetY;
-		var color = debugPanel.color;
-
-		if (mouseX > debugPanel.x &&
-			mouseX < debugPanel.x + debugPanel.width &&
-			mouseY > buttonY &&
-			mouseY < buttonY + debugPanel.offsetY)
-		{
-			if (mouseLeftHeld)
-			{
-				debugPanel.selected = button;
-			}
-			debugPanel.highlighted = button;
-		}
-		y += debugPanel.offsetY;
-	}
+	panelUpdate(debugPanel);
 }
 
 function draw()
 {
 	colorRect(0, 0, canvas.width, canvas.height, backgroundColor);
-	drawPanelWithButtons(debugPanel, 100);
+	drawPanelWithButtons(debugPanel, PRECISION);
 	colorRect(heroX, heroY, heroWidth, heroHeight, heroColor);
 	// drawText(mouseX + ":" + mouseY, mouseX+20, mouseY+20, '10px Consolas', 'yellow');
 }
@@ -182,44 +127,7 @@ function draw()
 function keyPressed(evt)
 {
 	keyEventHandler(evt.keyCode, true);
-	if (debugPanel.selected != undefined) {
-
-		var key = evt.keyCode;
-		if (key >= 96 && key <= 106)
-		{
-			var num = key-96;
-			debugPanel.buffer += num.toString();
-		}
-		if (key >= 48 && key <= 58)
-		{
-			var num = key-48;
-			debugPanel.buffer += num.toString();
-		}
-		if (key == 109 || key == 189)
-		{
-			debugPanel.buffer += "-";
-		}
-		if (key == 110 || key == 190)
-		{
-			debugPanel.buffer += ".";
-		}
-		if (key == 8)
-		{
-			debugPanel.buffer = debugPanel.buffer.slice(0, -1);
-		}
-		if (key == 13) {
-			var number = Number(debugPanel.buffer);
-			if (!isNaN(number)) {
-				debugPanel.selected.value(number);
-				debugPanel.selected = undefined;
-			}
-			else
-			{
-				debugPanel.selected = undefined;
-			}
-			debugPanel.buffer = ""
-		}
-	}
+	panelKeyCapture(debugPanel, evt);
 }
 
 function keyReleased(evt)
@@ -287,44 +195,4 @@ function calculateMousePos(evt)
 	x: mouseX,
 	y: mouseY
   };
-}
-
-function drawPanelWithButtons(panel, precision)
-{
-	var x = panel.x;
-	var y = panel.y;
-
-	for (var i = 0; i < panel.button.length; i++)
-	{
-		var button = panel.button[i];
-		var buttonY = y - panel.offsetY;
-		var color = panel.color;
-
-		if (button == panel.highlighted)
-		{
-			color = panel.highlightColor;
-		}
-
-		if (button == panel.selected)
-		{
-			color = panel.highlightColor;
-			drawButton(button.name, panel.buffer);
-		}
-		else
-		{
-			drawButton(button.name, button.value);
-		}
-	}
-
-	function drawButton(text, value)
-	{
-		var font = panel.font;
-		var result = value();
-		if (typeof value() == NUMBER)
-		{
-			result = Math.round(value()*precision)/precision;
-		}
-		drawText(text + result, x, y, font, color);
-		y += panel.offsetY;
-	}
 }
