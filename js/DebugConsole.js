@@ -7,7 +7,7 @@ var debugPanel = {
 	buffer: "",
 	button: [
 		{ name: "Move Max: ", value: eval(makePtr("heroMaxVelocityX")) },
-		{ name: "Jump Max: ", value: eval(makePtr("heroMaxVelocityY")) },
+		{ name: "Jump Power: ", value: eval(makePtr("jumpButtonPower")) },
 		{ name: "Move Vel: ", value: eval(makePtr("heroMoveSpeed")) },
 		{ name: "Jump Vel: ", value: eval(makePtr("heroJumpSpeed")) },
 		{ name: "Gravity:  ", value: eval(makePtr("_GRAVITY")) },

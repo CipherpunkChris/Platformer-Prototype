@@ -34,6 +34,8 @@ var leftKeyHeld = false;
 var upKeyHeld = false;
 var rightKeyHeld = false;
 var downKeyHeld = false;
+var jumpButtonPower = .1;
+var jumpButtonHoldAvailable = false;
 
 var backgroundColor = 'dimGrey';
 
@@ -88,6 +90,7 @@ function update()
 		heroIsJumping = true;
 		heroCanJump = false
 		heroVelocityY = -heroJumpSpeed;
+		jumpButtonHoldAvailable = true;
 	}
 
 	if (leftKeyHeld)
@@ -101,6 +104,14 @@ function update()
 
 	if (heroIsJumping)
 	{
+		if(jumpKeyHeld && jumpButtonHoldAvailable && heroVelocityY < 0) {
+			heroY -= jumpButtonPower;
+		}
+		else if (heroVelocityY < 0)
+		{
+			heroVelocityY = 0;
+			jumpButtonHoldAvailable = false;
+		}
 		heroVelocityX *= _AIR_RESISTANCE;
 	}
 	else
