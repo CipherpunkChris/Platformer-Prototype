@@ -6,20 +6,19 @@ var debugPanel = {
 
 	buffer: "",
 	button: [
-		{ name: "Move Max: ", value: eval(makePtr("heroMaxVelocityX")) },
-		{ name: "Jump Power: ", value: eval(makePtr("jumpButtonPower")) },
-		{ name: "Move Vel: ", value: eval(makePtr("heroMoveSpeed")) },
-		{ name: "Jump Vel: ", value: eval(makePtr("heroJumpSpeed")) },
+		{ name: "Move Vel: ", value: eval(makePtr("hero.moveSpeed")) },
+		{ name: "Jump Vel: ", value: eval(makePtr("hero.jumpSpeed")) },
 		{ name: "Gravity:  ", value: eval(makePtr("_GRAVITY")) },
 		{ name: "Friction: ", value: eval(makePtr("_FRICTION")) },
 		{ name: "Air Drag: ", value: eval(makePtr("_AIR_RESISTANCE")) },
+		{ name: "Rewind:   ", value: eval(makePtr("_REWIND_MULTIPLIER")) },
 	],
 
 	selected: undefined,
 	highlighted: undefined,
 
-	x: 10,
-	y: 20,
+	x: 12,
+	y: 80,
 	offsetY: 15,
 	width: 150,
 
