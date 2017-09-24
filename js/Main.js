@@ -172,17 +172,14 @@ function update()
 	{
 		for (var i = 0; i < _REWIND_MULTIPLIER; i++)
 		{
-			if (commands.length == 0)
+			if (commands.length <= 0)
 			{
+				time = 0;
 				break;
 			}
 			commands[commands.length-1].undo();
 			commands.splice(-1, 1);
 			time -= TIME_PER_TICK;
-			if (time < 0)
-			{
-				time = 0;
-			}
 		}
 	}
 	else
@@ -194,12 +191,17 @@ function update()
 	}
 
 	// update clock display
+	clock.milliseconds = Math.floor(time*100)%100;
 	clock.seconds = Math.floor(time%60);
 	clock.minutes = Math.floor(time/60);
 	clock.hours = Math.floor(time/3600);
 	for (var segment in clock)
 	{
-		if (clock[segment] < 10)
+		if (clock[segment] < 0)
+		{
+			clock[segment] = "00";
+		}
+		else if (clock[segment] < 10)
 		{
 			clock[segment] = "0"+clock[segment];
 		}
@@ -208,10 +210,20 @@ function update()
 
 function draw()
 {
+	// draw background
 	colorRect(0, 0, canvas.width, canvas.height, backgroundColor);
-	drawPanelWithButtons(debugPanel, PRECISION);
+
+	// draw hero
 	colorRect(hero.x, hero.y, hero.width, hero.height, hero.color);
-	drawText(clock.hours+":"+clock.minutes+":"+clock.seconds, 10, 25, '20pt consolas', 'lime');
+
+	// draw debug console
+	drawPanelWithButtons(debugPanel, PRECISION);
+
+
+	// draw segmented clock
+	drawText(clock.hours+":"+clock.minutes+":"+
+			 clock.seconds+"."+clock.milliseconds,
+			 10, 25, '20pt consolas', 'lime');
 
 	if (undoKeyHeld)
 	{
