@@ -27,7 +27,7 @@ function GamepadSupport()
     var SIMULATED_KEY_DOWN = KEY_ARROW_DOWN;
     var SIMULATED_KEY_LEFT = KEY_ARROW_LEFT;
     var SIMULATED_KEY_RIGHT = KEY_ARROW_RIGHT;
-    var SIMULATED_KEY_B_BUTTON = KEY_ENTER; // [B] button = enter
+    var SIMULATED_KEY_B_BUTTON = KEY_MINUS; // [B] button = enter
     var SIMULATED_KEY_A_BUTTON = KEY_SPACEBAR; // [A] button = spacebar
 
     window.addEventListener("gamepadconnected", function(e) {

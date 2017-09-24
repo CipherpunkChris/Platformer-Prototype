@@ -47,9 +47,10 @@ var _REWIND_MULTIPLIER = 2;
 var _GRAVITY = 0.60;
 var _AIR_RESISTANCE = 0.90;
 var _FRICTION = 0.92;
-var commands = [];
+var commands = [[]];
 
-var hero = {
+var actors = [];
+var actor = {
 	x: undefined,
 	y: undefined,
 	width: 64,
@@ -76,6 +77,14 @@ var hero = {
 		this.canJump = canJump;
 	}
 };
+
+var hero = {...actor};
+var enemy = {...actor};
+enemy.width = 32;
+enemy.height = 32;
+enemy.color = 'red';
+
+actors = [hero, enemy];
 
 function makeMoveUnitCommand(unit, x, y)
 {
@@ -113,8 +122,11 @@ window.onload = function()
 	document.addEventListener('mousedown', mousePressed);
 	document.addEventListener('mouseup', mouseReleased);
 
-	hero.x = canvas.width/2;
+	hero.x = canvas.width*0.5;
 	hero.y = canvas.height - hero.height;
+
+	enemy.x = canvas.width-enemy.width;
+	enemy.y = canvas.height-enemy.height;
 
 	setInterval(function()
 	{
@@ -166,29 +178,53 @@ function update()
 		hero.isJumping = false;
 	}
 
+	var command = makeMoveUnitCommand(hero, targetX, targetY);
+	commands[commands.length-1].push(command);
+
+	targetX = enemy.x - 1;
+	targetY = enemy.y;
+
+	var command = makeMoveUnitCommand(enemy, targetX, targetY);
+	commands[commands.length-1].push(command);
+
 	panelUpdate(debugPanel);
 
+	// handle all commands in queue for this tick or undo all commands from the previous tick`
 	if (undoKeyHeld)
-	{
-		for (var i = 0; i < _REWIND_MULTIPLIER; i++)
+	{	commands.splice(-1, 1);
+		for (var tick = 0; tick < _REWIND_MULTIPLIER; tick++)
 		{
 			if (commands.length <= 0)
 			{
 				time = 0;
 				break;
 			}
-			commands[commands.length-1].undo();
+
+			var commandsThisTick = commands[commands.length-1].length;
+			for (var i = commandsThisTick-1; i >= 0; i--)
+			{
+				commands[commands.length-1][i].undo();
+				// commands[commands.length-1].splice(-1, 1);
+			}
+
 			commands.splice(-1, 1);
-			time -= TIME_PER_TICK;
+			if(tick != 0)
+			{
+				time -= TIME_PER_TICK;
+			}
 		}
 	}
 	else
 	{
-		var command = makeMoveUnitCommand(hero, targetX, targetY);
-		commands.push(command);
-		commands[commands.length-1].execute();
+		var commandsThisTick = commands[commands.length-1].length;
+		for (var i = 0; i < commandsThisTick; i++)
+		{
+			commands[commands.length-1][i].execute();
+		}
 		time += TIME_PER_TICK;
 	}
+
+	commands.push([]);
 
 	// update clock display
 	clock.milliseconds = Math.floor(time*100)%100;
@@ -206,6 +242,8 @@ function update()
 			clock[segment] = "0"+clock[segment];
 		}
 	}
+
+
 }
 
 function draw()
@@ -215,6 +253,7 @@ function draw()
 
 	// draw hero
 	colorRect(hero.x, hero.y, hero.width, hero.height, hero.color);
+	colorRect(enemy.x, enemy.y, enemy.width, enemy.height, enemy.color);
 
 	// draw debug console
 	drawPanelWithButtons(debugPanel, PRECISION);
@@ -249,7 +288,7 @@ function keyEventHandler(key, state)
 		case KEY_SPACEBAR:
 			jumpKeyHeld = state;
 			break;
-		case KEY_ENTER:
+		case KEY_MINUS:
 			undoKeyHeld = state;
 			break;
 		case KEY_ARROW_LEFT:
