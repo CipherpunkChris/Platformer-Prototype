@@ -1,11 +1,14 @@
 var canvas, canvasContext;
 const FRAMES_PER_SECOND = 60;
 const TIME_PER_TICK = 1/FRAMES_PER_SECOND;
-var time = 0;
+var lastUpdate = Date.now();
+var deltaTime = 0;
+var gameTimer = { time: 0 };
 var clock = {
-	hours: 0,
+	milliseconds: 0,
+	seconds: 0,
 	minutes: 0,
-	seconds: 0
+	hours: 0
 };
 
 const KEY_ARROW_LEFT = 37;
@@ -43,9 +46,9 @@ var downKeyHeld = false;
 
 var backgroundColor = 'dimGrey';
 
-var _REWIND_MULTIPLIER = 2;
+var _REWIND_MULTIPLIER = 4;
 var _GRAVITY = 0.60;
-var _AIR_RESISTANCE = 0.90;
+var _AIR_RESISTANCE = 0.93;
 var _FRICTION = 0.92;
 var commands = [[]];
 
@@ -57,7 +60,7 @@ var actor = {
 	height: 64,
 	velocityX: 0,
 	velocityY: 0,
-	moveSpeed: 1,
+	moveSpeed: 0.85,
 	jumpSpeed: 16,
 	isJumping: false,
 	canJump: true,
@@ -68,7 +71,7 @@ var actor = {
 		this.x = x;
 		this.y = y;
 	},
-	rewind: function(velocityX, velocityY,
+	rewindState: function(velocityX, velocityY,
 					 isJumping, canJump)
 	{
 		this.velocityX = velocityX;
@@ -105,10 +108,26 @@ function makeMoveUnitCommand(unit, x, y)
 		undo: function()
 		{
 			unit.moveTo(xBefore, yBefore);
-			unit.rewind(velocityXBefore, velocityYBefore,
+			unit.rewindState(velocityXBefore, velocityYBefore,
 						isJumpingBefore, canJumpBefore);
 		}
 	};
+}
+
+function makeAdvanceTimerCommand(timer, dt)
+{
+	var timeBefore;
+	return {
+		execute: function()
+		{
+			timeBefore = timer.time;
+			timer.time += dt;
+		},
+		undo: function()
+		{
+			timer.time = timeBefore;
+		}
+	}
 }
 
 window.onload = function()
@@ -137,6 +156,8 @@ window.onload = function()
 
 function update()
 {
+	var command; // commands are created and added to commands array
+
 	if (!hero.isJumping && !jumpKeyHeld)
 	{
 		hero.canJump = true;
@@ -178,59 +199,28 @@ function update()
 		hero.isJumping = false;
 	}
 
-	var command = makeMoveUnitCommand(hero, targetX, targetY);
+	command = makeMoveUnitCommand(hero, targetX, targetY);
 	commands[commands.length-1].push(command);
 
 	targetX = enemy.x - 1;
 	targetY = enemy.y;
+	command = makeMoveUnitCommand(enemy, targetX, targetY);
+	commands[commands.length-1].push(command);
 
-	var command = makeMoveUnitCommand(enemy, targetX, targetY);
+	now = Date.now();
+	deltaTime = now - lastUpdate;
+	lastUpdate = now;
+	command = makeAdvanceTimerCommand(gameTimer, deltaTime);
 	commands[commands.length-1].push(command);
 
 	panelUpdate(debugPanel);
 
-	// handle all commands in queue for this tick or undo all commands from the previous tick`
-	if (undoKeyHeld)
-	{	commands.splice(-1, 1);
-		for (var tick = 0; tick < _REWIND_MULTIPLIER; tick++)
-		{
-			if (commands.length <= 0)
-			{
-				time = 0;
-				break;
-			}
-
-			var commandsThisTick = commands[commands.length-1].length;
-			for (var i = commandsThisTick-1; i >= 0; i--)
-			{
-				commands[commands.length-1][i].undo();
-				// commands[commands.length-1].splice(-1, 1);
-			}
-
-			commands.splice(-1, 1);
-			if(tick != 0)
-			{
-				time -= TIME_PER_TICK;
-			}
-		}
-	}
-	else
-	{
-		var commandsThisTick = commands[commands.length-1].length;
-		for (var i = 0; i < commandsThisTick; i++)
-		{
-			commands[commands.length-1][i].execute();
-		}
-		time += TIME_PER_TICK;
-	}
-
-	commands.push([]);
-
 	// update clock display
-	clock.milliseconds = Math.floor(time*100)%100;
-	clock.seconds = Math.floor(time%60);
-	clock.minutes = Math.floor(time/60);
-	clock.hours = Math.floor(time/3600);
+
+	clock.milliseconds = Math.floor((gameTimer.time%1000)/10);
+	clock.seconds = Math.floor(gameTimer.time/1000)%60;
+	clock.minutes = Math.floor(gameTimer.time/60000)%60;
+	clock.hours = Math.floor(gameTimer.time/3600000)%60;
 	for (var segment in clock)
 	{
 		if (clock[segment] < 0)
@@ -243,7 +233,36 @@ function update()
 		}
 	}
 
+	// handle all commands in queue for this tick or undo all commands from the previous tick`
+	// this should always be the end of update
+	if (undoKeyHeld)
+	{
+		commands.splice(-1, 1);
+		for (var tick = 0; tick < _REWIND_MULTIPLIER; tick++)
+		{
+			if (commands.length <= 0)
+			{
+				break;
+			}
+			var commandsThisTick = commands[commands.length-1].length;
+			for (var i = commandsThisTick-1; i >= 0; i--)
+			{
+				commands[commands.length-1][i].undo();
+				// commands[commands.length-1].splice(-1, 1);
+			}
 
+			commands.splice(-1, 1);
+		}
+	}
+	else
+	{
+		var commandsThisTick = commands[commands.length-1].length;
+		for (var i = 0; i < commandsThisTick; i++)
+		{
+			commands[commands.length-1][i].execute();
+		}
+	}
+	commands.push([]);
 }
 
 function draw()
@@ -266,7 +285,7 @@ function draw()
 
 	if (undoKeyHeld)
 	{
-		drawText("REWIND", 10, 60, '26pt consolas', 'lime');
+		drawText("REWIND "+_REWIND_MULTIPLIER+"x", 10, 55, '24pt consolas', 'lime');
 	}
 }
 
