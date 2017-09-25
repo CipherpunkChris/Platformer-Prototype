@@ -63,8 +63,18 @@ var actor = {
 	moveSpeed: 0.85,
 	jumpSpeed: 16,
 	isJumping: false,
+	isAlive: true,
 	canJump: true,
-	color: 'lightGrey',
+	color: 'turquoise',
+
+	boxCollider: function(x, y) {
+		return {
+			width: this.width,
+			height: this.height,
+			x: x,
+			y: y
+		}
+	},
 
 	moveTo: function(x, y)
 	{
@@ -72,20 +82,23 @@ var actor = {
 		this.y = y;
 	},
 	rewindState: function(velocityX, velocityY,
-					 isJumping, canJump)
+					 	  isJumping, canJump,
+					 	  isAlive)
 	{
 		this.velocityX = velocityX;
 		this.velocityY = velocityY;
 		this.isJumping = isJumping;
 		this.canJump = canJump;
+		this.isAlive = isAlive;
 	}
 };
 
 var hero = {...actor};
 var enemy = {...actor};
-enemy.width = 32;
-enemy.height = 32;
+enemy.width = 48;
+enemy.height = 48;
 enemy.color = 'red';
+enemy.velocityX = -3;
 
 actors = [hero, enemy];
 
@@ -93,7 +106,7 @@ function makeMoveUnitCommand(unit, x, y)
 {
 	var xBefore, yBefore;
 	var velocityXBefore, velocityYBefore;
-	var isJumpingBefore, canJumpBefore;
+	var isJumpingBefore, canJumpBefore, isAliveBefore;
 	return {
 		execute: function()
 		{
@@ -103,13 +116,15 @@ function makeMoveUnitCommand(unit, x, y)
 			velocityYBefore = unit.velocityY;
 			isJumpingBefore = unit.isJumping;
 			canJumpBefore = unit.canJump;
+			isAliveBefore = unit.isAlive;
 			unit.moveTo(x, y);
 		},
 		undo: function()
 		{
 			unit.moveTo(xBefore, yBefore);
 			unit.rewindState(velocityXBefore, velocityYBefore,
-						isJumpingBefore, canJumpBefore);
+							 isJumpingBefore, canJumpBefore,
+						 	 isAliveBefore);
 		}
 	};
 }
@@ -156,7 +171,12 @@ window.onload = function()
 
 function update()
 {
+	if (!hero.isAlive && !undoKeyHeld)
+	{
+		return;
+	}
 	var command; // commands are created and added to commands array
+	var currentCommands = commands[commands.length-1];
 
 	if (!hero.isJumping && !jumpKeyHeld)
 	{
@@ -199,28 +219,71 @@ function update()
 		hero.isJumping = false;
 	}
 
-	command = makeMoveUnitCommand(hero, targetX, targetY);
-	commands[commands.length-1].push(command);
+	// collision tests
+	var box, enemyBox;
+	beforeBox = hero.boxCollider(hero.x, hero.y);
+	afterXBox = hero.boxCollider(targetX, hero.y);
+	afterYBox = hero.boxCollider(hero.x, targetY);
+	enemyBox = enemy.boxCollider(enemy.x, enemy.y);
 
-	targetX = enemy.x - 1;
-	targetY = enemy.y;
+	if (hero.velocityY > 0 && enemy.isAlive &&
+		!boxCollisionDetected(beforeBox, enemyBox) &&
+		 boxCollisionDetected(afterYBox, enemyBox))
+	{
+		hero.velocityY = -hero.velocityY + -hero.jumpSpeed/4; // adds bounce
+		targetY = enemy.y - hero.height;
+		enemy.isAlive = false;
+		enemy.velocityY = -enemy.jumpSpeed;
+	}
+	else if (boxCollisionDetected(afterXBox, enemyBox))
+	{
+		if (beforeBox.x < enemyBox.x)
+		{
+			targetX = enemyBox.x - hero.width;
+		}
+		else
+		{
+			targetX = enemy.x + enemy.width;
+		}
+		hero.isAlive = false;
+		return;
+	}
+
+	command = makeMoveUnitCommand(hero, targetX, targetY);
+	currentCommands.push(command);
+
+	if (enemy.isAlive)
+	{
+		if (enemy.x < 0 || enemy.x + enemy.width > canvas.width)
+		{
+			enemy.velocityX = -enemy.velocityX;
+		}
+
+		targetX = enemy.x + enemy.velocityX;
+		targetY = enemy.y;
+	}
+	else
+	{
+		enemy.velocityY += _GRAVITY;
+		targetX = enemy.x;
+		targetY = enemy.y + enemy.velocityY;
+	}
 	command = makeMoveUnitCommand(enemy, targetX, targetY);
-	commands[commands.length-1].push(command);
+	currentCommands.push(command);
 
 	now = Date.now();
 	deltaTime = now - lastUpdate;
 	lastUpdate = now;
 	command = makeAdvanceTimerCommand(gameTimer, deltaTime);
-	commands[commands.length-1].push(command);
+	currentCommands.push(command);
 
 	panelUpdate(debugPanel);
 
 	// update clock display
-
 	clock.milliseconds = Math.floor((gameTimer.time%1000)/10);
 	clock.seconds = Math.floor(gameTimer.time/1000)%60;
-	clock.minutes = Math.floor(gameTimer.time/60000)%60;
-	clock.hours = Math.floor(gameTimer.time/3600000)%60;
+	clock.minutes = Math.floor(gameTimer.time/(60*1000))%60;
+	clock.hours = Math.floor(gameTimer.time/(3600*1000))%60;
 	for (var segment in clock)
 	{
 		if (clock[segment] < 0)
@@ -237,17 +300,20 @@ function update()
 	// this should always be the end of update
 	if (undoKeyHeld)
 	{
+		var commandsThisTick;
 		commands.splice(-1, 1);
+
 		for (var tick = 0; tick < _REWIND_MULTIPLIER; tick++)
 		{
+			currentCommands = commands[commands.length-1];
 			if (commands.length <= 0)
 			{
 				break;
 			}
-			var commandsThisTick = commands[commands.length-1].length;
+			commandsThisTick =  currentCommands.length;
 			for (var i = commandsThisTick-1; i >= 0; i--)
 			{
-				commands[commands.length-1][i].undo();
+				currentCommands[i].undo();
 				// commands[commands.length-1].splice(-1, 1);
 			}
 
@@ -256,10 +322,10 @@ function update()
 	}
 	else
 	{
-		var commandsThisTick = commands[commands.length-1].length;
+		commandsThisTick = currentCommands.length;
 		for (var i = 0; i < commandsThisTick; i++)
 		{
-			commands[commands.length-1][i].execute();
+			currentCommands[i].execute();
 		}
 	}
 	commands.push([]);
@@ -271,8 +337,14 @@ function draw()
 	colorRect(0, 0, canvas.width, canvas.height, backgroundColor);
 
 	// draw hero
-	colorRect(hero.x, hero.y, hero.width, hero.height, hero.color);
 	colorRect(enemy.x, enemy.y, enemy.width, enemy.height, enemy.color);
+	colorRect(hero.x, hero.y, hero.width, hero.height, hero.color);
+
+	// for (var i = 0; i < actors.length; i++)
+	// {
+	// 	var box = actors[i].boxCollider(actor.x, actor.y);
+	// 	colorRect(box.x, box.y, box.width, box.height, 'orange');
+	// }
 
 	// draw debug console
 	drawPanelWithButtons(debugPanel, PRECISION);
@@ -355,4 +427,13 @@ function calculateMousePos(evt)
 	x: mouseX,
 	y: mouseY
   };
+}
+
+function boxCollisionDetected(box1, box2)
+{
+	return ((box1.x > box2.x + box2.width  || // I'm right of them
+			 box1.x + box1.width < box2.x  || // I'm left of them
+			 box1.y > box2.y + box2.height || // I'm below them
+			 box1.y + box1.height < box2.y)   // I'm above them
+			 == false)
 }
