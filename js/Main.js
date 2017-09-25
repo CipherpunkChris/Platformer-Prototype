@@ -235,7 +235,8 @@ function update()
 		enemy.isAlive = false;
 		enemy.velocityY = -enemy.jumpSpeed;
 	}
-	else if (boxCollisionDetected(afterXBox, enemyBox))
+	else if (hero.isAlive && enemy.isAlive &&
+			 boxCollisionDetected(afterXBox, enemyBox))
 	{
 		if (beforeBox.x < enemyBox.x)
 		{
@@ -245,8 +246,8 @@ function update()
 		{
 			targetX = enemy.x + enemy.width;
 		}
+		targetX += enemy.velocityX;
 		hero.isAlive = false;
-		return;
 	}
 
 	command = makeMoveUnitCommand(hero, targetX, targetY);
@@ -358,6 +359,14 @@ function draw()
 	if (undoKeyHeld)
 	{
 		drawText("REWIND "+_REWIND_MULTIPLIER+"x", 10, 55, '24pt consolas', 'lime');
+	}
+	if (!hero.isAlive)
+	{
+		drawText("DEAD", hero.x+2, hero.y+40, '20pt consolas', 'black');
+	}
+	if (!enemy.isAlive)
+	{
+		drawText("DEAD", enemy.x+1, enemy.y+30, '15pt consolas', 'black');
 	}
 }
 
